@@ -1,12 +1,8 @@
 import React, { useEffect, useCallback } from 'react';
-import PropTypes from 'prop-types';
 
 import { useQueryParams } from '../../Utilities/useQueryParams';
 import useRequest from '../../Utilities/useRequest';
 
-import LoadingState from '../../Components/ApiStatus/LoadingState';
-import NoResults from '../../Components/ApiStatus/NoResults';
-import ApiErrorState from '../../Components/ApiStatus/ApiErrorState';
 import Pagination from '../../Components/Pagination';
 
 import { readJobExplorer, readJobExplorerOptions } from '../../Api/';
@@ -23,6 +19,8 @@ import { Card, CardBody, PaginationVariant } from '@patternfly/react-core';
 import JobExplorerList from './JobExplorerList';
 import FilterableToolbar from '../../Components/Toolbar/';
 import { getQSConfig } from '../../Utilities/qs';
+import ApiStatusWrapper from '../../Components/ApiStatus/ApiStatusWrapper';
+import ApiOptionsWrapper from '../../Components/ApiStatus/ApiOptionsWrapper';
 
 const initialQueryParams = {
   ...jobExplorer.defaultParams,
@@ -41,88 +39,89 @@ const JobExplorer = () => {
     dispatch: queryParamsDispatch,
   } = useQueryParams(qsConfig);
 
-  const {
-    result: options,
-    error,
-    request: fetchOptions,
-  } = useRequest(
+  const optionsApi = useRequest(
     useCallback(() => readJobExplorerOptions(queryParams), [queryParams]),
     {}
   );
 
-  const {
-    result: { items: data, meta },
-    isLoading: dataIsLoading,
-    isSuccess: dataIsSuccess,
-    request: fetchEndpoints,
-  } = useRequest(
+  const dataApi = useRequest(
     useCallback(() => readJobExplorer(queryParams), [queryParams]),
     { items: [], meta: {} }
   );
 
   useEffect(() => {
-    fetchOptions();
-    fetchEndpoints();
+    optionsApi.request();
+    dataApi.request();
   }, [queryParams]);
 
-  if (error) return <ApiErrorState message={error.error} />;
+  const renderToolbar = () => (
+    <FilterableToolbar
+      categories={optionsApi.result}
+      filters={queryParams}
+      qsConfig={qsConfig}
+      setFilters={setFromToolbar}
+      pagination={
+        <Pagination
+          count={dataApi.result?.meta?.count}
+          params={{
+            limit: +queryParams.limit,
+            offset: +queryParams.offset,
+          }}
+          qsConfig={qsConfig}
+          setPagination={setFromPagination}
+          isCompact
+        />
+      }
+      hasSettings
+    />
+  );
+
+  const renderContent = () => (
+    <ApiStatusWrapper
+      api={{
+        ...dataApi,
+        result: dataApi.result?.items,
+      }}
+    >
+      <JobExplorerList
+        jobs={dataApi.result?.items}
+        queryParams={queryParams}
+        queryParamsDispatch={queryParamsDispatch}
+      />
+    </ApiStatusWrapper>
+  );
+
+  const renderFooter = () => (
+    <Pagination
+      count={dataApi.result?.meta?.count}
+      params={{
+        limit: +queryParams.limit,
+        offset: +queryParams.offset,
+      }}
+      qsConfig={qsConfig}
+      setPagination={setFromPagination}
+      variant={PaginationVariant.bottom}
+    />
+  );
 
   return (
-    <React.Fragment>
+    <>
       <PageHeader>
         <PageHeaderTitle title={'Job Explorer'} />
       </PageHeader>
       <Main>
-        <Card>
-          <CardBody>
-            <FilterableToolbar
-              categories={options}
-              filters={queryParams}
-              qsConfig={qsConfig}
-              setFilters={setFromToolbar}
-              pagination={
-                <Pagination
-                  count={meta?.count}
-                  params={{
-                    limit: parseInt(queryParams.limit),
-                    offset: parseInt(queryParams.offset),
-                  }}
-                  qsConfig={qsConfig}
-                  setPagination={setFromPagination}
-                  isCompact
-                />
-              }
-              hasSettings
-            />
-            {dataIsLoading && <LoadingState />}
-            {dataIsSuccess && data.length <= 0 && <NoResults />}
-            {dataIsSuccess && data.length > 0 && (
-              <JobExplorerList
-                jobs={data}
-                queryParams={queryParams}
-                queryParamsDispatch={queryParamsDispatch}
-              />
-            )}
-            <Pagination
-              count={meta?.count}
-              params={{
-                limit: parseInt(queryParams.limit),
-                offset: parseInt(queryParams.offset),
-              }}
-              qsConfig={qsConfig}
-              setPagination={setFromPagination}
-              variant={PaginationVariant.bottom}
-            />
-          </CardBody>
-        </Card>
+        <ApiOptionsWrapper api={optionsApi}>
+          <Card>
+            <CardBody>
+              {renderToolbar()}
+              {renderContent()}
+              {renderFooter()}
+            </CardBody>
+          </Card>
+        </ApiOptionsWrapper>
       </Main>
-    </React.Fragment>
+    </>
   );
-};
-
-JobExplorer.propTypes = {
-  location: PropTypes.object,
-  history: PropTypes.object,
 };
 
 export default JobExplorer;
