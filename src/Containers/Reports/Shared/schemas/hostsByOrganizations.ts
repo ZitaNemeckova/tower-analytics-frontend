@@ -11,35 +11,36 @@ import { readHostExplorer, readHostExplorerOptions } from '../../../../Api';
 import { CATEGORIES } from '../constants';
 import { AttributesType, ReportPageParams } from '../types';
 
-const slug = 'hosts_changed_by_job_template';
+const slug = 'hosts_by_organization';
 
-const name = 'Hosts changed by job template';
+const name = 'Hosts by organization';
+
 const description =
-  'The number of hosts changed by a job template in a specified time window.\n\nYou can use this report to find discrepancies in the host change rate at a particular time, helping you drill down to when and why hosts were unreachable at a particular time.';
+  'The number of unique hosts, grouped by organizations from Ansible Controller.  You can use this report to find which organizations are managing the most hosts with Ansible automation.';
 
 const categories = [CATEGORIES.executive];
 
 const defaultParams = {
   limit: 6,
   offset: 0,
+  granularity: 'daily',
+  quick_date_range: 'last_30_days',
+  status: [],
+  org_id: [],
+  job_type: ['workflowjob', 'job'],
+  cluster_id: [],
+  template_id: [],
+  inventory_id: [],
   attributes: ['total_unique_host_count', 'total_unique_host_changed_count'],
-  group_by: 'template',
+  group_by: 'org',
   group_by_time: true,
-  granularity: 'monthly',
-  quick_date_range: 'last_6_months',
   sort_options: 'total_unique_host_count',
   sort_order: 'desc',
-  cluster_id: [],
-  inventory_id: [],
-  job_type: [],
-  org_id: [],
-  status: [],
-  template_id: [],
 };
 
 const extraAttributes: AttributesType = [
   { key: 'id', value: 'ID' },
-  { key: 'name', value: 'Template name' },
+  { key: 'name', value: 'Organization name' },
 ];
 
 const schemaFnc = (

@@ -7,39 +7,40 @@ import {
   ChartType,
   ChartThemeColor,
 } from 'react-json-chart-builder';
-import { readHostExplorer, readHostExplorerOptions } from '../../../../Api';
+import { readJobExplorer, readJobExplorerOptions } from '../../../../Api';
 import { CATEGORIES } from '../constants';
 import { AttributesType, ReportPageParams } from '../types';
 
-const slug = 'hosts_changed_by_job_template';
+const slug = 'jobs_and_tasks_by_organization';
 
-const name = 'Hosts changed by job template';
+const name = 'Jobs/Tasks by organization';
+
 const description =
-  'The number of hosts changed by a job template in a specified time window.\n\nYou can use this report to find discrepancies in the host change rate at a particular time, helping you drill down to when and why hosts were unreachable at a particular time.';
+  'The number of job template and task runs, grouped by organizations from Ansible Controller. You can use this report to find which organizations are running the most Ansible jobs.';
 
 const categories = [CATEGORIES.executive];
 
 const defaultParams = {
   limit: 6,
   offset: 0,
-  attributes: ['total_unique_host_count', 'total_unique_host_changed_count'],
-  group_by: 'template',
-  group_by_time: true,
-  granularity: 'monthly',
-  quick_date_range: 'last_6_months',
-  sort_options: 'total_unique_host_count',
-  sort_order: 'desc',
-  cluster_id: [],
-  inventory_id: [],
-  job_type: [],
-  org_id: [],
+  granularity: 'daily',
+  quick_date_range: 'last_30_days',
   status: [],
+  org_id: [],
+  job_type: ['workflowjob', 'job'],
+  cluster_id: [],
   template_id: [],
+  inventory_id: [],
+  attributes: ['total_count', 'host_task_count'],
+  group_by: 'org',
+  group_by_time: true,
+  sort_options: 'total_count',
+  sort_order: 'desc',
 };
 
 const extraAttributes: AttributesType = [
   { key: 'id', value: 'ID' },
-  { key: 'name', value: 'Template name' },
+  { key: 'name', value: 'Organization name' },
 ];
 
 const schemaFnc = (
@@ -119,8 +120,8 @@ const reportParams: ReportPageParams = {
   report: {
     defaultParams,
     extraAttributes,
-    readData: readHostExplorer,
-    readOptions: readHostExplorerOptions,
+    readData: readJobExplorer,
+    readOptions: readJobExplorerOptions,
     schemaFnc,
   },
 };
