@@ -76,7 +76,6 @@ const hydrateSchema =
       const regVar = new RegExp(`VAR_${arr[0]}`, 'g');
       hydratedSchema = hydratedSchema.replace(regVar, `${arr[1]}`);
     });
-    console.log(JSON.parse(hydratedSchema));
     return JSON.parse(hydratedSchema) as ChartSchemaElement[];
   };
 

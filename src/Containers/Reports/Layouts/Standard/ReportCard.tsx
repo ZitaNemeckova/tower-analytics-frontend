@@ -25,11 +25,15 @@ import FilterableToolbar from '../../../../Components/Toolbar/Toolbar';
 import Chart from '../../../../Components/Chart';
 import Table from './Table';
 import DownloadButton from '../../../../Components/Toolbar/DownloadButton';
-import { endpointFunctionMap, OptionsReturnType } from '../../../../Api';
+import {
+  endpointFunctionMap,
+  OptionsReturnType,
+  readReport,
+} from '../../../../Api';
 import { capitalize } from '../../../../Utilities/helpers';
 import { perPageOptions } from '../../Shared/constants';
 import hydrateSchema from '../../Shared/hydrateSchema';
-import { StandardProps } from '../types';
+import { ReportSchema, StandardProps } from '../types';
 import percentageFormatter from '../../../../Utilities/percentageFormatter';
 import { getDateFormatByGranularity } from '../../../../Utilities/helpers';
 import {
@@ -70,9 +74,20 @@ const ReportCard: FunctionComponent<StandardProps> = ({
   const { result: options, request: fetchOptions } =
     useRequest<OptionsReturnType>(readOptions, {});
 
-  const { request: fetchData, ...dataApi } = useRequest(readData, {
-    meta: { count: 0, legend: [] },
-  });
+  const { request: fetchData, ...dataApi } = useRequest(
+    async () => {
+      const response = await readData(queryParams);
+      return response;
+    },
+    {
+      meta: { count: 0, legend: [] },
+    }
+  );
+
+  const { result: report, request: fetchReport } = useRequest(async () => {
+    const response = await readReport(slug);
+    return response.report as ReportSchema;
+  }, {} as ReportSchema);
 
   const redirect = useRedirect();
 
@@ -94,6 +109,9 @@ const ReportCard: FunctionComponent<StandardProps> = ({
   useEffect(() => {
     fetchData(queryParams);
     fetchOptions(queryParams);
+    if (slug === 'host_anomalies_scatter') {
+      fetchReport(slug);
+    }
   }, [queryParams]);
 
   /**
@@ -290,7 +308,7 @@ const ReportCard: FunctionComponent<StandardProps> = ({
           <ApiStatusWrapper api={dataApi}>
             <Chart
               schema={hydrateSchema(
-                schema,
+                report?.layoutProps?.schema || schema,
                 dataApi
               )({
                 label: chartParams.label,
@@ -352,7 +370,7 @@ const ReportCard: FunctionComponent<StandardProps> = ({
         <ApiStatusWrapper api={dataApi}>
           <Chart
             schema={hydrateSchema(
-              schema,
+              report?.layoutProps?.schema || schema,
               dataApi
             )({
               label: chartParams.label,
